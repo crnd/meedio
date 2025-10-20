@@ -1,6 +1,6 @@
 ﻿namespace Meedio.Wrappers;
 
-internal sealed class RequestHandlerWrapper<TRequest, TResponse> : IRequestHandlerWrapper
+internal sealed class RequestHandlerWrapper<TRequest, TResponse> : IRequestHandlerWrapper<TResponse>
 	where TRequest : IRequest<TResponse>
 	where TResponse : notnull
 {
@@ -11,7 +11,7 @@ internal sealed class RequestHandlerWrapper<TRequest, TResponse> : IRequestHandl
 		this.handler = handler;
 	}
 
-	public async Task<object> Handle(IRequest<object> request, CancellationToken cancellationToken)
+	public async Task<TResponse> Handle(IRequest<TResponse> request, CancellationToken cancellationToken)
 	{
 		return await handler.Handle((TRequest)request, cancellationToken);
 	}

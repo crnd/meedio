@@ -1,4 +1,5 @@
 ﻿using Meedio.Wrappers;
+using Microsoft.Extensions.DependencyInjection;
 using System.Collections.Frozen;
 
 namespace Meedio;
@@ -6,38 +7,41 @@ namespace Meedio;
 internal sealed class Mediator : IMediator
 {
 	private readonly IServiceProvider serviceProvider;
-	private readonly FrozenDictionary<Type, Type> handlers;
+	private readonly FrozenDictionary<Type, Type> requestHandlerMapping;
+	private readonly FrozenDictionary<Type, List<Type>> pipelineProcessorMapping;
 
-	public Mediator(IServiceProvider serviceProvider, Type[] handlerTypes)
+	public Mediator(IServiceProvider serviceProvider, Dictionary<Type, Type> requestHandlerMapping, Dictionary<Type, List<Type>> pipelineProcessorMapping)
 	{
-		var handlers = new Dictionary<Type, Type>();
-		foreach (var handlerType in handlerTypes)
-		{
-			var requestType = handlerType
-				.GetInterfaces()
-				.Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IRequestHandler<,>))
-				.First()
-				.GetGenericArguments()
-				.First();
-			handlers.Add(requestType, handlerType);
-		}
-
-		this.handlers = handlers.ToFrozenDictionary();
+		this.requestHandlerMapping = requestHandlerMapping.ToFrozenDictionary();
+		this.pipelineProcessorMapping = pipelineProcessorMapping.ToFrozenDictionary();
 		this.serviceProvider = serviceProvider;
 	}
 
 	public async Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken)
 	{
 		var requestType = request.GetType();
-		if (!handlers.TryGetValue(requestType, out var handlerType))
+		if (!requestHandlerMapping.TryGetValue(requestType, out var handlerType))
 		{
 			throw new InvalidOperationException($"No handler defined for request type {requestType.Name}.");
 		}
 
-		var wrapperType = typeof(RequestHandlerWrapper<,>).MakeGenericType(requestType, typeof(TResponse));
-		var handler = serviceProvider.GetService(handlerType);
-		var wrapper = (IRequestHandlerWrapper)Activator.CreateInstance(wrapperType, handler)!;
+		var handlerWrapperType = typeof(RequestHandlerWrapper<,>).MakeGenericType(requestType, typeof(TResponse));
+		var handler = serviceProvider.GetRequiredService(handlerType);
+		var handlerWrapper = (IRequestHandlerWrapper<TResponse>)Activator.CreateInstance(handlerWrapperType, handler)!;
 
-		return (TResponse)await wrapper.Handle((IRequest<object>)request, cancellationToken);
+		Func<CancellationToken, Task<TResponse>> pipeline = ct => handlerWrapper.Handle(request, ct);
+
+		var processorTypes = pipelineProcessorMapping[requestType];
+		foreach (var processorType in processorTypes)
+		{
+			var processorWrapperType = typeof(PipelineProcessorWrapper<,>).MakeGenericType(requestType, typeof(TResponse));
+			var processor = serviceProvider.GetRequiredService(processorType);
+			var processorWrapper = (IPipelineProcessorWrapper<TResponse>)Activator.CreateInstance(processorWrapperType, processor)!;
+
+			var next = pipeline;
+			pipeline = ct => processorWrapper.Process(request, next, ct);
+		}
+
+		return await pipeline(cancellationToken);
 	}
 }

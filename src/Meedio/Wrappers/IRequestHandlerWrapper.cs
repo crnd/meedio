@@ -1,6 +1,6 @@
 ﻿namespace Meedio.Wrappers;
 
-internal interface IRequestHandlerWrapper
+internal interface IRequestHandlerWrapper<TResponse>
 {
-	public Task<object> Handle(IRequest<object> request, CancellationToken cancellationToken);
+	public Task<TResponse> Handle(IRequest<TResponse> request, CancellationToken cancellationToken);
 }
