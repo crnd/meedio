@@ -2,5 +2,5 @@
 
 public interface IMediator
 {
-	public Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken);
+	public Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default);
 }

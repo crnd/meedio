@@ -17,7 +17,7 @@ internal sealed class Mediator : IMediator
 		this.serviceProvider = serviceProvider;
 	}
 
-	public async Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken)
+	public async Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
 	{
 		var requestType = request.GetType();
 		if (!requestHandlerMapping.TryGetValue(requestType, out var handlerType))

@@ -5,8 +5,6 @@ namespace Meedio.UnitTests;
 
 public class MediatorTests
 {
-	private readonly CancellationTokenSource cts = new();
-
 	[Fact]
 	public async Task SendThrowsWhenNoHandlerFound()
 	{
@@ -14,7 +12,7 @@ public class MediatorTests
 		var provider = collection.BuildServiceProvider();
 		var mediator = new Mediator(provider, [], []);
 
-		await Assert.ThrowsAsync<InvalidOperationException>(() => mediator.Send(new Request { Expected = 0 }, cts.Token));
+		await Assert.ThrowsAsync<InvalidOperationException>(() => mediator.Send(new Request { Expected = 0 }));
 	}
 
 	[Fact]
@@ -31,7 +29,7 @@ public class MediatorTests
 		};
 		var processorsMapping = new Dictionary<Type, List<Type>> { { typeof(Request), [] } };
 		var mediator = new Mediator(provider, handlersMapping, processorsMapping);
-		var response = await mediator.Send(new Request { Expected = expected }, cts.Token);
+		var response = await mediator.Send(new Request { Expected = expected });
 
 		Assert.StrictEqual(expected, response.Actual);
 		Assert.Empty(response.Processors);
@@ -53,7 +51,7 @@ public class MediatorTests
 			{ typeof(Request), [typeof(RequestProcessor1<Request, Response>)] }
 		};
 		var mediator = new Mediator(provider, handlersMapping, processorsMapping);
-		var response = await mediator.Send(new Request { Expected = 123 }, cts.Token);
+		var response = await mediator.Send(new Request { Expected = 123 });
 
 		var processor = Assert.Single(response.Processors);
 		Assert.Equal(nameof(RequestProcessor1<Request, Response>), processor);
@@ -80,7 +78,7 @@ public class MediatorTests
 				typeof(RequestProcessor1<Request, Response>)] }
 		};
 		var mediator = new Mediator(provider, handlersMapping, processorsMapping);
-		var response = await mediator.Send(new Request { Expected = 123 }, cts.Token);
+		var response = await mediator.Send(new Request { Expected = 123 });
 
 		Assert.StrictEqual(3, response.Processors.Count);
 		Assert.Equal(nameof(RequestProcessor1<Request, Response>), response.Processors[0]);
