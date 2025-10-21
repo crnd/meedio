@@ -1,5 +1,6 @@
 ﻿using Meedio.Wrappers;
 using Microsoft.Extensions.DependencyInjection;
+using System.Collections.Concurrent;
 using System.Collections.Frozen;
 
 namespace Meedio;
@@ -9,6 +10,8 @@ internal sealed class Mediator : IMediator
 	private readonly IServiceProvider serviceProvider;
 	private readonly FrozenDictionary<Type, Type> requestHandlerMapping;
 	private readonly FrozenDictionary<Type, List<Type>> pipelineProcessorMapping;
+	private readonly ConcurrentDictionary<Type, Type> handlerWrapperTypes = [];
+	private readonly ConcurrentDictionary<Type, Type> processorWrapperTypes = [];
 
 	public Mediator(IServiceProvider serviceProvider, Dictionary<Type, Type> requestHandlerMapping, Dictionary<Type, List<Type>> pipelineProcessorMapping)
 	{
@@ -25,16 +28,18 @@ internal sealed class Mediator : IMediator
 			throw new InvalidOperationException($"No handler defined for request type {requestType.Name}.");
 		}
 
-		var handlerWrapperType = typeof(RequestHandlerWrapper<,>).MakeGenericType(requestType, typeof(TResponse));
+		var handlerWrapperType = handlerWrapperTypes
+			.GetOrAdd(requestType, static requestType => typeof(RequestHandlerWrapper<,>).MakeGenericType(requestType, typeof(TResponse)));
 		var handler = serviceProvider.GetRequiredService(handlerType);
 		var handlerWrapper = (IRequestHandlerWrapper<TResponse>)Activator.CreateInstance(handlerWrapperType, handler)!;
 
 		Func<CancellationToken, Task<TResponse>> pipeline = ct => handlerWrapper.Handle(request, ct);
 
 		var processorTypes = pipelineProcessorMapping[requestType];
+		var processorWrapperType = processorWrapperTypes
+			.GetOrAdd(requestType, static requestType => typeof(PipelineProcessorWrapper<,>).MakeGenericType(requestType, typeof(TResponse)));
 		foreach (var processorType in processorTypes)
 		{
-			var processorWrapperType = typeof(PipelineProcessorWrapper<,>).MakeGenericType(requestType, typeof(TResponse));
 			var processor = serviceProvider.GetRequiredService(processorType);
 			var processorWrapper = (IPipelineProcessorWrapper<TResponse>)Activator.CreateInstance(processorWrapperType, processor)!;
 
