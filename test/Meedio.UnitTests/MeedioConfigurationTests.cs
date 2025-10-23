@@ -38,21 +38,12 @@ public class MeedioConfigurationTests
 	}
 
 	[Fact]
-	public void RegisterSameProcessorsMultipleTimesSucceeds()
+	public void RegisterSameProcessorsMultipleTimesThrows()
 	{
 		var configuration = new MeedioConfiguration();
-		configuration.RegisterProcessor(typeof(TestProcessor2<,>));
-		configuration.RegisterProcessor(typeof(TestProcessor2<,>));
-		configuration.RegisterProcessor(typeof(TestProcessor3<,>));
-		configuration.RegisterProcessor(typeof(TestProcessor3<,>));
-		configuration.RegisterProcessor(typeof(TestProcessor3<,>));
+		configuration.RegisterProcessor(typeof(TestProcessor1<,>));
 
-		Assert.StrictEqual(5, configuration.ProcessorTypes.Count);
-		Assert.StrictEqual(typeof(TestProcessor2<,>), configuration.ProcessorTypes[0]);
-		Assert.StrictEqual(typeof(TestProcessor2<,>), configuration.ProcessorTypes[1]);
-		Assert.StrictEqual(typeof(TestProcessor3<,>), configuration.ProcessorTypes[2]);
-		Assert.StrictEqual(typeof(TestProcessor3<,>), configuration.ProcessorTypes[3]);
-		Assert.StrictEqual(typeof(TestProcessor3<,>), configuration.ProcessorTypes[4]);
+		Assert.Throws<ArgumentException>(() => configuration.RegisterProcessor(typeof(TestProcessor1<,>)));
 	}
 
 	[Fact]

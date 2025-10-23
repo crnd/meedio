@@ -17,6 +17,11 @@ public sealed class MeedioConfiguration
 
 	public MeedioConfiguration RegisterProcessor(Type processorType)
 	{
+		if (ProcessorTypes.Contains(processorType))
+		{
+			throw new ArgumentException($"{processorType.Name} has already been registered.", nameof(processorType));
+		}
+
 		if (!processorType.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IPipelineProcessor<,>)))
 		{
 			throw new ArgumentException($"{processorType.Name} does not implement {typeof(IPipelineProcessor<,>).Name}", nameof(processorType));
