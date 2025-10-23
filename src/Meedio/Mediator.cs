@@ -35,7 +35,8 @@ internal sealed class Mediator : IMediator
 
 		Func<IRequest<TResponse>, CancellationToken, Task<TResponse>> pipeline = async (request, cancellationToken) =>
 		{
-			var handler = serviceProvider.GetRequiredService(handlerType);
+			using var scope = serviceProvider.CreateScope();
+			var handler = scope.ServiceProvider.GetRequiredService(handlerType);
 			var handlerWrapperType = typeof(RequestHandlerWrapper<,>).MakeGenericType(requestType, typeof(TResponse));
 			var handlerWrapper = (IRequestHandlerWrapper<TResponse>)Activator.CreateInstance(handlerWrapperType, handler)!;
 
@@ -48,7 +49,8 @@ internal sealed class Mediator : IMediator
 			var currentPipeline = pipeline;
 			pipeline = async (request, cancellationToken) =>
 			{
-				var processor = serviceProvider.GetRequiredService(processorType);
+				using var scope = serviceProvider.CreateScope();
+				var processor = scope.ServiceProvider.GetRequiredService(processorType);
 				var processorWrapper = (IPipelineProcessorWrapper<TResponse>)Activator.CreateInstance(processorWrapperType, processor)!;
 
 				return await processorWrapper.Process(request, ct => currentPipeline(request, ct), cancellationToken);
