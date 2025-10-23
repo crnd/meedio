@@ -11,6 +11,8 @@ internal sealed class Mediator : IMediator
 	private readonly FrozenDictionary<Type, Type> requestHandlerMapping;
 	private readonly FrozenDictionary<Type, List<Type>> pipelineProcessorMapping;
 	private readonly ConcurrentDictionary<Type, Delegate> pipelineCache = [];
+	private readonly ConcurrentDictionary<Type, Delegate> handlerWrapperFactoryCache = [];
+	private readonly ConcurrentDictionary<Type, Delegate> processorWrapperFactoryCache = [];
 
 	public Mediator(IServiceProvider serviceProvider, Dictionary<Type, Type> requestHandlerMapping, Dictionary<Type, List<Type>> pipelineProcessorMapping)
 	{
@@ -33,17 +35,33 @@ internal sealed class Mediator : IMediator
 			throw new InvalidOperationException($"No handler defined for request {requestType.Name}.");
 		}
 
+		var handlerWrapperFactory = (Func<object, IRequestHandlerWrapper<TResponse>>)handlerWrapperFactoryCache.GetOrAdd(
+			requestType,
+			requestType =>
+			{
+				var wrapperType = typeof(RequestHandlerWrapper<,>).MakeGenericType(requestType, typeof(TResponse));
+				return (Func<object, IRequestHandlerWrapper<TResponse>>)(handler =>
+					(IRequestHandlerWrapper<TResponse>)Activator.CreateInstance(wrapperType, handler)!);
+			});
+
 		Func<IRequest<TResponse>, CancellationToken, Task<TResponse>> pipeline = async (request, cancellationToken) =>
 		{
 			using var scope = serviceProvider.CreateScope();
 			var handler = scope.ServiceProvider.GetRequiredService(handlerType);
-			var handlerWrapperType = typeof(RequestHandlerWrapper<,>).MakeGenericType(requestType, typeof(TResponse));
-			var handlerWrapper = (IRequestHandlerWrapper<TResponse>)Activator.CreateInstance(handlerWrapperType, handler)!;
+			var handlerWrapper = handlerWrapperFactory(handler);
 
 			return await handlerWrapper.Handle(request, cancellationToken);
 		};
 
-		var processorWrapperType = typeof(PipelineProcessorWrapper<,>).MakeGenericType(requestType, typeof(TResponse));
+		var processorWrapperFactory = (Func<object, IPipelineProcessorWrapper<TResponse>>)processorWrapperFactoryCache.GetOrAdd(
+			requestType,
+			requestType =>
+			{
+				var wrapperType = typeof(PipelineProcessorWrapper<,>).MakeGenericType(requestType, typeof(TResponse));
+				return (Func<object, IPipelineProcessorWrapper<TResponse>>)(processor =>
+					(IPipelineProcessorWrapper<TResponse>)Activator.CreateInstance(wrapperType, processor)!);
+			});
+
 		foreach (var processorType in pipelineProcessorMapping[requestType])
 		{
 			var currentPipeline = pipeline;
@@ -51,7 +69,7 @@ internal sealed class Mediator : IMediator
 			{
 				using var scope = serviceProvider.CreateScope();
 				var processor = scope.ServiceProvider.GetRequiredService(processorType);
-				var processorWrapper = (IPipelineProcessorWrapper<TResponse>)Activator.CreateInstance(processorWrapperType, processor)!;
+				var processorWrapper = processorWrapperFactory(processor);
 
 				return await processorWrapper.Process(request, ct => currentPipeline(request, ct), cancellationToken);
 			};
