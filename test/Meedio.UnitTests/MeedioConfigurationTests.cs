@@ -6,6 +6,27 @@ namespace Meedio.UnitTests;
 public class MeedioConfigurationTests
 {
 	[Fact]
+	public void RegisterHandlersAddsAssembly()
+	{
+		var configuration = new MeedioConfiguration();
+		configuration.RegisterHandlersFromAssemblies(typeof(IMediator).Assembly);
+
+		var assembly = Assert.Single(configuration.Assemblies);
+		Assert.StrictEqual(typeof(IMediator).Assembly, assembly);
+	}
+
+	[Fact]
+	public void RegisterHandlersAddsMultipleAssemblies()
+	{
+		var configuration = new MeedioConfiguration();
+		configuration.RegisterHandlersFromAssemblies(typeof(IMediator).Assembly, typeof(MeedioConfigurationTests).Assembly);
+
+		Assert.StrictEqual(2, configuration.Assemblies.Count);
+		Assert.StrictEqual(typeof(IMediator).Assembly, configuration.Assemblies[0]);
+		Assert.StrictEqual(typeof(MeedioConfigurationTests).Assembly, configuration.Assemblies[1]);
+	}
+
+	[Fact]
 	public void RegisterProcessorNotImplementingPipelineProcessorThrows()
 	{
 		var configuration = new MeedioConfiguration();

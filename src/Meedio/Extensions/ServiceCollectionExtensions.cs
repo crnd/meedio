@@ -21,14 +21,7 @@ public static class ServiceCollectionExtensions
 
 		foreach (var requestHandlerType in requestHandlerTypes)
 		{
-			var requestHandlerGenericArguments = requestHandlerType
-				.GetInterfaces()
-				.Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IRequestHandler<,>))
-				.First()
-				.GetGenericArguments();
-
-			var requestType = requestHandlerGenericArguments[0];
-			var responseType = requestHandlerGenericArguments[1];
+			var (requestType, responseType) = ExtractGenericArgumentsFromHandlerType(requestHandlerType);
 			requestHandlerMapping.Add(requestType, requestHandlerType);
 			requestTypes.Add((requestType, responseType));
 
@@ -54,6 +47,27 @@ public static class ServiceCollectionExtensions
 		services.AddSingleton<IMediator>(sp => new Mediator(sp, requestHandlerMapping, pipelineProcessorMapping));
 
 		return services;
+	}
+
+	internal static (Type, Type) ExtractGenericArgumentsFromHandlerType(Type requestHandlerType)
+	{
+		if (requestHandlerType.IsGenericTypeDefinition)
+		{
+			throw new InvalidOperationException($"{requestHandlerType.Name} must be a closed constructed type.");
+		}
+
+		var requestHandlerInterfaces = requestHandlerType
+			.GetInterfaces()
+			.Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IRequestHandler<,>))
+			.ToArray();
+		if (requestHandlerInterfaces.Length != 1)
+		{
+			throw new InvalidOperationException($"{requestHandlerType.Name} must implement exactly one {typeof(IRequestHandler<,>).Name}.");
+		}
+
+		var genericArguments = requestHandlerInterfaces[0].GetGenericArguments();
+
+		return (genericArguments[0], genericArguments[1]);
 	}
 
 	internal static bool PipelineProcessorIsValidForRequest(Type pipelineProcessorType, Type requestType)

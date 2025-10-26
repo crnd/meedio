@@ -5,6 +5,39 @@ namespace Meedio.UnitTests;
 
 public class ServiceCollectionExtensionTests
 {
+	[Fact]
+	public void ExtractTypesFromOpenHandlerThrows()
+	{
+		Assert.Throws<InvalidOperationException>(() => ServiceCollectionExtensions.ExtractGenericArgumentsFromHandlerType(typeof(OpenHandler<,>)));
+	}
+
+	[Fact]
+	public void ExtractTypesFromSemiOpenHandlerThrows()
+	{
+		Assert.Throws<InvalidOperationException>(() => ServiceCollectionExtensions.ExtractGenericArgumentsFromHandlerType(typeof(OpenHandler<>)));
+	}
+
+	[Fact]
+	public void ExtractTypesFromNonHandlerThrows()
+	{
+		Assert.Throws<InvalidOperationException>(() => ServiceCollectionExtensions.ExtractGenericArgumentsFromHandlerType(typeof(Request)));
+	}
+
+	[Fact]
+	public void ExtractTypesFromMultiRequestHandlerThrows()
+	{
+		Assert.Throws<InvalidOperationException>(() => ServiceCollectionExtensions.ExtractGenericArgumentsFromHandlerType(typeof(MultiRequestHandler)));
+	}
+
+	[Fact]
+	public void ExtractTypesFromHandlerReturnsRequestAndResponseTypes()
+	{
+		var (requestType, responseType) = ServiceCollectionExtensions.ExtractGenericArgumentsFromHandlerType(typeof(RequestHandler));
+
+		Assert.StrictEqual(typeof(Request), requestType);
+		Assert.StrictEqual(typeof(Response), responseType);
+	}
+
 	[Theory]
 	[InlineData(typeof(RequestProcessor<,>), typeof(Request), true)]
 	[InlineData(typeof(RequestProcessor<,>), typeof(Command), true)]
@@ -68,6 +101,53 @@ public class ServiceCollectionExtensionTests
 	private sealed class CommandDto : ICommand<ResponseDto> { }
 
 	private sealed class QueryDto : IQuery<ResponseDto> { };
+
+	private sealed class OpenHandler<TRequest> : IRequestHandler<TRequest, Response>
+		where TRequest : IRequest<Response>
+	{
+		public Task<Response> Handle(TRequest request, CancellationToken cancellationToken)
+		{
+			throw new NotImplementedException();
+		}
+	}
+
+	private sealed class OpenHandler<TRequest, TResponse> : IRequestHandler<TRequest, TResponse>
+		where TRequest : IRequest<TResponse>
+	{
+		public Task<TResponse> Handle(TRequest request, CancellationToken cancellationToken)
+		{
+			throw new NotImplementedException();
+		}
+	}
+
+	private sealed class MultiRequestHandler :
+		IRequestHandler<Request, Response>,
+		IRequestHandler<Command, Response>,
+		IRequestHandler<Query, Response>
+	{
+		public Task<Response> Handle(Request request, CancellationToken cancellationToken)
+		{
+			throw new NotImplementedException();
+		}
+
+		public Task<Response> Handle(Command request, CancellationToken cancellationToken)
+		{
+			throw new NotImplementedException();
+		}
+
+		public Task<Response> Handle(Query request, CancellationToken cancellationToken)
+		{
+			throw new NotImplementedException();
+		}
+	}
+
+	private sealed class RequestHandler : IRequestHandler<Request, Response>
+	{
+		public Task<Response> Handle(Request request, CancellationToken cancellationToken)
+		{
+			throw new NotImplementedException();
+		}
+	}
 
 	private sealed class RequestProcessor<TRequest, TResponse> : IPipelineProcessor<TRequest, TResponse>
 		where TRequest : IRequest<TResponse>
