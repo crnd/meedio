@@ -1,5 +1,8 @@
 ﻿namespace Meedio;
 
+/// <summary>
+/// <see cref="Unit"/> represents a type with no value.
+/// </summary>
 public readonly struct Unit : IComparable, IComparable<Unit>, IEquatable<Unit>
 {
 	public static readonly Unit Value = new();

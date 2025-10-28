@@ -2,12 +2,20 @@
 
 namespace Meedio.Extensions;
 
+/// <summary>
+/// Configuration options for Meedio.
+/// </summary>
 public sealed class MeedioConfiguration
 {
 	internal List<Assembly> Assemblies { get; } = [];
 
 	internal List<Type> ProcessorTypes { get; } = [];
 
+	/// <summary>
+	/// Registers request handlers from provided <paramref name="assemblies"/>.
+	/// </summary>
+	/// <param name="assemblies">Array of assemblies to register request handlers from.</param>
+	/// <returns><see cref="MeedioConfiguration"/> that can be used to further configure Meedio.</returns>
 	public MeedioConfiguration RegisterHandlersFromAssemblies(params Assembly[] assemblies)
 	{
 		Assemblies.AddRange(assemblies);
@@ -15,6 +23,12 @@ public sealed class MeedioConfiguration
 		return this;
 	}
 
+	/// <summary>
+	/// Adds a new pipeline processor to the pipeline.
+	/// </summary>
+	/// <param name="processorType">Pipeline processor type to add to the pipeline.</param>
+	/// <returns><see cref="MeedioConfiguration"/> that can be used to further configure Meedio.</returns>
+	/// <exception cref="ArgumentException">Thrown if <paramref name="processorType"/> is not a valid pipeline processor type.</exception>
 	public MeedioConfiguration RegisterProcessor(Type processorType)
 	{
 		if (ProcessorTypes.Contains(processorType))

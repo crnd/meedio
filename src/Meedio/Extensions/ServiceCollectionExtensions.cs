@@ -2,8 +2,17 @@
 
 namespace Meedio.Extensions;
 
+/// <summary>
+/// Extension methods for setting up Meedio.
+/// </summary>
 public static class ServiceCollectionExtensions
 {
+	/// <summary>
+	/// Adds Meedio services to the specified <see cref="IServiceCollection"/>.
+	/// </summary>
+	/// <param name="services"><see cref="IServiceCollection"/> to add services to.</param>
+	/// <param name="configuration"><see cref="Action"/> to configure <see cref="MeedioConfiguration"/>.</param>
+	/// <returns><see cref="IServiceCollection"/> that can be used to further configure services.</returns>
 	public static IServiceCollection AddMeedio(this IServiceCollection services, Action<MeedioConfiguration> configuration)
 	{
 		var meedioConfiguration = new MeedioConfiguration();
