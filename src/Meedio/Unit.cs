@@ -19,15 +19,15 @@ public readonly struct Unit : IComparable, IComparable<Unit>, IEquatable<Unit>
 
 	public override int GetHashCode() => 0;
 
-	public static bool operator ==(Unit left, Unit right) => true;
+	public static bool operator ==(Unit _1, Unit _2) => true;
 
-	public static bool operator !=(Unit left, Unit right) => false;
+	public static bool operator !=(Unit _1, Unit _2) => false;
 
-	public static bool operator <(Unit left, Unit right) => false;
+	public static bool operator <(Unit _1, Unit _2) => false;
 
-	public static bool operator <=(Unit left, Unit right) => true;
+	public static bool operator <=(Unit _1, Unit _2) => true;
 
-	public static bool operator >(Unit left, Unit right) => false;
+	public static bool operator >(Unit _1, Unit _2) => false;
 
-	public static bool operator >=(Unit left, Unit right) => true;
+	public static bool operator >=(Unit _1, Unit _2) => true;
 }
