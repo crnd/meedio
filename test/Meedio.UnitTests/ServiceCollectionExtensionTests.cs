@@ -1,5 +1,7 @@
 ﻿using Meedio.Extensions;
 using Microsoft.Extensions.DependencyInjection;
+using NSubstitute;
+using System.Reflection;
 using Xunit;
 
 namespace Meedio.UnitTests;
@@ -42,9 +44,58 @@ public class ServiceCollectionExtensionTests
 	[Fact]
 	public void MultipleHandlersForRequestThrows()
 	{
+		var assembly = Substitute.For<Assembly>();
+		assembly.GetExportedTypes().Returns([typeof(DuplicateHandler1), typeof(DuplicateHandler2)]);
 		var collection = new ServiceCollection();
 
-		Assert.Throws<InvalidOperationException>(() => collection.AddMeedio(c => c.RegisterHandlersFromAssemblies(typeof(Request).Assembly)));
+		Assert.Throws<InvalidOperationException>(() => collection.AddMeedio(c => c.RegisterHandlersFromAssemblies(assembly)));
+	}
+
+	[Fact]
+	public void MediatorIsRegistered()
+	{
+		var assembly = Substitute.For<Assembly>();
+		var collection = new ServiceCollection();
+		collection.AddMeedio(c => c.RegisterHandlersFromAssemblies(assembly));
+		var serviceProvider = collection.BuildServiceProvider();
+		var mediator = serviceProvider.GetService<IMediator>();
+
+		Assert.NotNull(mediator);
+	}
+
+	[Fact]
+	public void HandlersAreRegistered()
+	{
+		var assembly = Substitute.For<Assembly>();
+		assembly.GetExportedTypes().Returns([typeof(RequestHandler), typeof(CommandHandler), typeof(QueryHandler)]);
+
+		var collection = new ServiceCollection();
+		collection.AddMeedio(c => c.RegisterHandlersFromAssemblies(assembly));
+		var serviceProvider = collection.BuildServiceProvider();
+
+		Assert.NotNull(serviceProvider.GetService<RequestHandler>());
+		Assert.NotNull(serviceProvider.GetService<CommandHandler>());
+		Assert.NotNull(serviceProvider.GetService<QueryHandler>());
+	}
+
+	[Fact]
+	public void ProcessorsAreRegistered()
+	{
+		var assembly = Substitute.For<Assembly>();
+		assembly.GetExportedTypes().Returns([typeof(RequestHandler), typeof(CommandHandler), typeof(QueryHandler)]);
+		var collection = new ServiceCollection();
+		collection.AddMeedio(c =>
+		{
+			c.RegisterHandlersFromAssemblies(assembly);
+			c.RegisterProcessor(typeof(RequestProcessor<,>));
+			c.RegisterProcessor(typeof(CommandProcessor<,>));
+			c.RegisterProcessor(typeof(QueryProcessor<,>));
+		});
+		var serviceProvider = collection.BuildServiceProvider();
+
+		Assert.NotNull(serviceProvider.GetService<RequestProcessor<Request, Response>>());
+		Assert.NotNull(serviceProvider.GetService<CommandProcessor<Command, Response>>());
+		Assert.NotNull(serviceProvider.GetService<QueryProcessor<Query, Response>>());
 	}
 
 	[Theory]
@@ -95,11 +146,11 @@ public class ServiceCollectionExtensionTests
 
 	private interface IDto { }
 
-	public sealed class Response { }
+	private sealed class Response { }
 
 	private sealed class ResponseDto : IDto { }
 
-	public sealed class Request : IRequest<Response> { }
+	private sealed class Request : IRequest<Response> { }
 
 	private sealed class Command : ICommand<Response> { }
 
@@ -158,7 +209,23 @@ public class ServiceCollectionExtensionTests
 		}
 	}
 
-	public sealed class DuplicateHandler1 : IRequestHandler<Request, Response>
+	private sealed class CommandHandler : IRequestHandler<Command, Response>
+	{
+		public Task<Response> Handle(Command request, CancellationToken cancellationToken)
+		{
+			throw new NotImplementedException();
+		}
+	}
+
+	private sealed class QueryHandler : IRequestHandler<Query, Response>
+	{
+		public Task<Response> Handle(Query request, CancellationToken cancellationToken)
+		{
+			throw new NotImplementedException();
+		}
+	}
+
+	private sealed class DuplicateHandler1 : IRequestHandler<Request, Response>
 	{
 		public Task<Response> Handle(Request request, CancellationToken cancellationToken)
 		{
@@ -166,7 +233,7 @@ public class ServiceCollectionExtensionTests
 		}
 	}
 
-	public sealed class DuplicateHandler2 : IRequestHandler<Request, Response>
+	private sealed class DuplicateHandler2 : IRequestHandler<Request, Response>
 	{
 		public Task<Response> Handle(Request request, CancellationToken cancellationToken)
 		{
