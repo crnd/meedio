@@ -1,4 +1,5 @@
 ﻿using Meedio.Extensions;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Meedio.UnitTests;
@@ -36,6 +37,14 @@ public class ServiceCollectionExtensionTests
 
 		Assert.StrictEqual(typeof(Request), requestType);
 		Assert.StrictEqual(typeof(Response), responseType);
+	}
+
+	[Fact]
+	public void MultipleHandlersForRequestThrows()
+	{
+		var collection = new ServiceCollection();
+
+		Assert.Throws<InvalidOperationException>(() => collection.AddMeedio(c => c.RegisterHandlersFromAssemblies(typeof(Request).Assembly)));
 	}
 
 	[Theory]
@@ -86,11 +95,11 @@ public class ServiceCollectionExtensionTests
 
 	private interface IDto { }
 
-	private sealed class Response { }
+	public sealed class Response { }
 
 	private sealed class ResponseDto : IDto { }
 
-	private sealed class Request : IRequest<Response> { }
+	public sealed class Request : IRequest<Response> { }
 
 	private sealed class Command : ICommand<Response> { }
 
@@ -142,6 +151,22 @@ public class ServiceCollectionExtensionTests
 	}
 
 	private sealed class RequestHandler : IRequestHandler<Request, Response>
+	{
+		public Task<Response> Handle(Request request, CancellationToken cancellationToken)
+		{
+			throw new NotImplementedException();
+		}
+	}
+
+	public sealed class DuplicateHandler1 : IRequestHandler<Request, Response>
+	{
+		public Task<Response> Handle(Request request, CancellationToken cancellationToken)
+		{
+			throw new NotImplementedException();
+		}
+	}
+
+	public sealed class DuplicateHandler2 : IRequestHandler<Request, Response>
 	{
 		public Task<Response> Handle(Request request, CancellationToken cancellationToken)
 		{

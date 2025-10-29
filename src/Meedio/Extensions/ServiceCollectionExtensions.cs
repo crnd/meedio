@@ -31,7 +31,11 @@ public static class ServiceCollectionExtensions
 		foreach (var requestHandlerType in requestHandlerTypes)
 		{
 			var (requestType, responseType) = ExtractGenericArgumentsFromHandlerType(requestHandlerType);
-			requestHandlerMapping.Add(requestType, requestHandlerType);
+			if (!requestHandlerMapping.TryAdd(requestType, requestHandlerType))
+			{
+				throw new InvalidOperationException($"Multiple request handlers for {requestType.Name} have been defined.");
+			}
+
 			requestTypes.Add((requestType, responseType));
 
 			services.AddTransient(requestHandlerType);
