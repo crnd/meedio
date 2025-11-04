@@ -1,0 +1,31 @@
+name: release
+
+on: workflow_dispatch
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: |
+            8.x
+            9.x
+      - name: Build
+        run: dotnet build -c Release -warnaserror
+      - name: Test
+        run: dotnet test -c Release --no-build
+      - name: Pack
+        run: dotnet pack --no-build -o artifacts
+      - name: Get NuGet API key
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: crnd
+      - name: Push
+        run: dotnet nuget push artifacts/Meedio-*.nupkg --api-key ${{steps.login.outputs.NUGET_API_KEY}} --source https://api.nuget.org/v3/index.json
