@@ -28,4 +28,4 @@ jobs:
         with:
           user: crnd
       - name: Push
-        run: dotnet nuget push artifacts/Meedio-*.nupkg --api-key ${{steps.login.outputs.NUGET_API_KEY}} --source https://api.nuget.org/v3/index.json
+        run: dotnet nuget push artifacts/Meedio.*.*.*.nupkg --api-key ${{steps.login.outputs.NUGET_API_KEY}} --source https://api.nuget.org/v3/index.json
