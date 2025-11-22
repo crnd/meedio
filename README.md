@@ -3,7 +3,7 @@
 [![Build status](https://github.com/crnd/meedio/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/crnd/meedio/actions/workflows/ci.yml)
 [![Nuget](https://img.shields.io/nuget/v/meedio)](https://www.nuget.org/packages/Meedio)
 
-Minimal mediator pattern implementation that supports requests, request handlers and pipeline processors.
+Lightweight mediator pattern implementation that supports requests, request handlers and pipeline processors.
 
 Meedio constructs a request pipeline, enabling multiple pipeline processors to process requests sequentially before they are handled by a request handler.
 
@@ -116,4 +116,4 @@ var response = await mediator.Send(new GetBookRequest { Id = 7 }, cancellationTo
 
 ## License
 
-Meedio is licensed under the MIT license. See the [LICENSE](LICENSE) file for more details.
+Meedio is licensed under the MIT license. See the [license](LICENSE) file for more details.

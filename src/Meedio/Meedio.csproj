@@ -8,7 +8,7 @@
     <PackageVersion>0.1.5</PackageVersion>
     <PackageTags>mediator, request, response, pipeline, command, query, cqrs</PackageTags>
     <Authors>Henri Nieminen</Authors>
-    <Description>Minimal mediator pattern implementation</Description>
+    <Description>Lightweight mediator pattern implementation</Description>
     <Copyright>Copyright (c) Henri Nieminen</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryType>git</RepositoryType>
