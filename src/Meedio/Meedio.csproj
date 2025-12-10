@@ -5,7 +5,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PackageId>Meedio</PackageId>
-    <PackageVersion>0.1.5</PackageVersion>
     <PackageTags>mediator, request, response, pipeline, command, query, cqrs</PackageTags>
     <Authors>Henri Nieminen</Authors>
     <Description>Lightweight mediator pattern implementation</Description>

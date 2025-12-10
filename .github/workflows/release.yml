@@ -1,6 +1,16 @@
 name: release
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version'
+        type: string
+        required: true
+      version_suffix:
+        description: 'Version suffix'
+        type: string
+        required: false
 
 jobs:
   release:
@@ -22,11 +32,11 @@ jobs:
       - name: Test
         run: dotnet test -c Release --no-build
       - name: Pack
-        run: dotnet pack --no-build -o artifacts
+        run: dotnet pack --no-build -o artifacts /p:VersionPrefix=${{ github.event.inputs.version }} /p:VersionSuffix=${{ github.event.inputs.version_suffix }}
       - name: Get NuGet API key
         uses: NuGet/login@v1
         id: login
         with:
           user: crnd
       - name: Push
-        run: dotnet nuget push artifacts/Meedio.*.*.*.nupkg --api-key ${{steps.login.outputs.NUGET_API_KEY}} --source https://api.nuget.org/v3/index.json
+        run: dotnet nuget push artifacts/Meedio.*.*.*.nupkg --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
