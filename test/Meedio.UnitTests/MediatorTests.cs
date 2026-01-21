@@ -170,6 +170,56 @@ public class MediatorTests
 		Assert.Equal(request.Content, exception.Message);
 	}
 
+	[Fact]
+	public async Task HandlerWithDependencyCreated()
+	{
+		const int expected = 1390;
+
+		var collection = new ServiceCollection();
+		collection.AddTransient<HandlerWithDependency>();
+		collection.AddSingleton(new Service(expected));
+		var provider = collection.BuildServiceProvider();
+		var handlersMapping = new Dictionary<Type, Type>
+		{
+			{ typeof(Request), typeof(HandlerWithDependency) }
+		};
+		var processorsMapping = new Dictionary<Type, List<Type>>
+		{
+			{ typeof(Request), [] }
+		};
+		var mediator = new Mediator(provider, handlersMapping, processorsMapping);
+		var request = new Request { Expected = 990 };
+		var result = await mediator.Send(request);
+
+		Assert.StrictEqual(expected, result.Actual);
+		Assert.Empty(result.Processors);
+	}
+
+	[Fact]
+	public async Task ProcessorWithDependencyCreated()
+	{
+		const int expected = 1198;
+
+		var collection = new ServiceCollection();
+		collection.AddTransient<RequestHandler>();
+		collection.AddTransient<ProcessorWithDependency<Request, Response>>();
+		collection.AddSingleton(new Service(expected));
+		var provider = collection.BuildServiceProvider();
+		var handlersMapping = new Dictionary<Type, Type>
+		{
+			{ typeof(Request), typeof(RequestHandler) }
+		};
+		var processorsMapping = new Dictionary<Type, List<Type>>
+		{
+			{ typeof(Request), [typeof(ProcessorWithDependency<Request, Response>)] }
+		};
+		var mediator = new Mediator(provider, handlersMapping, processorsMapping);
+		var request = new Request { Expected = 999 };
+		var result = await mediator.Send(request);
+
+		Assert.StrictEqual(expected, result.Actual);
+	}
+
 	private sealed class Response
 	{
 		public required int Actual { get; set; }
@@ -212,6 +262,21 @@ public class MediatorTests
 		public Task<Unit> Handle(UnitRequest request, CancellationToken cancellationToken)
 		{
 			return Task.FromResult(Unit.Value);
+		}
+	}
+
+	private sealed class HandlerWithDependency : IRequestHandler<Request, Response>
+	{
+		private readonly Service service;
+
+		public HandlerWithDependency(Service service)
+		{
+			this.service = service;
+		}
+
+		public Task<Response> Handle(Request request, CancellationToken cancellationToken)
+		{
+			return Task.FromResult(new Response { Actual = service.Value, Processors = request.Processors });
 		}
 	}
 
@@ -279,6 +344,38 @@ public class MediatorTests
 			}
 			
 			return next(cancellationToken);
+		}
+	}
+
+	private sealed class ProcessorWithDependency<TRequest, TResponse> : IPipelineProcessor<TRequest, TResponse>
+		where TRequest : IRequest<TResponse>
+	{
+		private readonly Service service;
+
+		public ProcessorWithDependency(Service service)
+		{
+			this.service = service;
+		}
+
+		public async Task<TResponse> Process(TRequest request, Func<CancellationToken, Task<TResponse>> next, CancellationToken cancellationToken)
+		{
+			var result = await next(cancellationToken);
+			if (result is Response response)
+			{
+				response.Actual = service.Value;
+			}
+
+			return result;
+		}
+	}
+
+	private sealed class Service
+	{
+		public int Value { get; }
+
+		public Service(int value)
+		{
+			Value = value;
 		}
 	}
 }
