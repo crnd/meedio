@@ -12,7 +12,7 @@ public class MediatorTests
 		var provider = collection.BuildServiceProvider();
 		var mediator = new Mediator(provider, [], []);
 
-		await Assert.ThrowsAsync<InvalidOperationException>(() => mediator.Send(new Request { Expected = 0 }));
+		await Assert.ThrowsAsync<InvalidOperationException>(() => mediator.Send(new Request { Expected = 0 }, TestContext.Current.CancellationToken));
 	}
 
 	[Fact]
@@ -29,7 +29,7 @@ public class MediatorTests
 		};
 		var processorsMapping = new Dictionary<Type, List<Type>> { { typeof(Request), [] } };
 		var mediator = new Mediator(provider, handlersMapping, processorsMapping);
-		var response = await mediator.Send(new Request { Expected = expected });
+		var response = await mediator.Send(new Request { Expected = expected }, TestContext.Current.CancellationToken);
 
 		Assert.StrictEqual(expected, response.Actual);
 		Assert.Empty(response.Processors);
@@ -51,7 +51,7 @@ public class MediatorTests
 			{ typeof(Request), [typeof(RequestProcessor1<Request, Response>)] }
 		};
 		var mediator = new Mediator(provider, handlersMapping, processorsMapping);
-		var response = await mediator.Send(new Request { Expected = 123 });
+		var response = await mediator.Send(new Request { Expected = 123 }, TestContext.Current.CancellationToken);
 
 		var processor = Assert.Single(response.Processors);
 		Assert.Equal(nameof(RequestProcessor1<Request, Response>), processor);
@@ -78,7 +78,7 @@ public class MediatorTests
 				typeof(RequestProcessor1<Request, Response>)] }
 		};
 		var mediator = new Mediator(provider, handlersMapping, processorsMapping);
-		var response = await mediator.Send(new Request { Expected = 123 });
+		var response = await mediator.Send(new Request { Expected = 123 }, TestContext.Current.CancellationToken);
 
 		Assert.StrictEqual(3, response.Processors.Count);
 		Assert.Equal(nameof(RequestProcessor1<Request, Response>), response.Processors[0]);
@@ -143,7 +143,7 @@ public class MediatorTests
 			{ typeof(UnitRequest), [] }
 		};
 		var mediator = new Mediator(provider, handlersMapping, processorsMapping);
-		var result = await mediator.Send(new UnitRequest { Content = string.Empty });
+		var result = await mediator.Send(new UnitRequest { Content = string.Empty }, TestContext.Current.CancellationToken);
 
 		Assert.StrictEqual(Unit.Value, result);
 	}
@@ -166,7 +166,7 @@ public class MediatorTests
 		var mediator = new Mediator(provider, handlersMapping, processorsMapping);
 		var request = new UnitRequest { Content = Guid.NewGuid().ToString() };
 
-		var exception = await Assert.ThrowsAsync<Exception>(() => mediator.Send(request));
+		var exception = await Assert.ThrowsAsync<Exception>(() => mediator.Send(request, TestContext.Current.CancellationToken));
 		Assert.Equal(request.Content, exception.Message);
 	}
 
@@ -189,7 +189,7 @@ public class MediatorTests
 		};
 		var mediator = new Mediator(provider, handlersMapping, processorsMapping);
 		var request = new Request { Expected = 990 };
-		var result = await mediator.Send(request);
+		var result = await mediator.Send(request, TestContext.Current.CancellationToken);
 
 		Assert.StrictEqual(expected, result.Actual);
 		Assert.Empty(result.Processors);
@@ -215,7 +215,7 @@ public class MediatorTests
 		};
 		var mediator = new Mediator(provider, handlersMapping, processorsMapping);
 		var request = new Request { Expected = 999 };
-		var result = await mediator.Send(request);
+		var result = await mediator.Send(request, TestContext.Current.CancellationToken);
 
 		Assert.StrictEqual(expected, result.Actual);
 	}
